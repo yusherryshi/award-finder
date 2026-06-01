@@ -1,11 +1,8 @@
 from __future__ import annotations
 
-from datetime import date
 from typing import List
 
-import httpx
-
-from ..schemas import Cabin, FlightOffer
+from ..schemas import FlightOffer
 from .base import Provider
 
 
@@ -13,17 +10,16 @@ class TurkishProvider(Provider):
     program = "turkish"
     program_name = "Turkish Miles&Smiles"
     alliance = "Star Alliance"
-    implementation = "stub"
-    notes = "TODO: turkishairlines.com loyalty award search. Known Star sweet spot. Mock for now."
-    base_rates = {"economy": 30000, "premium_economy": 45000, "business": 45000, "first": 90000}
+    implementation = "launcher"
+    notes = "Launches Turkish Miles&Smiles award search with route pre-filled."
 
-    async def search(
-        self,
-        client: httpx.AsyncClient,
-        origin: str,
-        destination: str,
-        depart_date: date,
-        cabin: Cabin,
-        passengers: int,
-    ) -> List[FlightOffer]:
-        return self.make_mock(origin, destination, depart_date, cabin)
+    async def search(self, client, origin, destination, depart_date, cabin, passengers) -> List[FlightOffer]:
+        return []
+
+    def deep_link(self, origin, destination, depart_date, cabin, passengers):
+        cabin_q = {"economy": "ECONOMY", "premium_economy": "ECONOMY", "business": "BUSINESS", "first": "BUSINESS"}.get(cabin, "ECONOMY")
+        return (
+            "https://www.turkishairlines.com/en-int/flights/booking/?"
+            f"awardTicket=true&tripType=oneWay&origin={origin}&destination={destination}"
+            f"&departureDate={depart_date.isoformat()}&passengerAdult={passengers}&cabin={cabin_q}"
+        )

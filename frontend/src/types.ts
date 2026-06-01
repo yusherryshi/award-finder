@@ -29,7 +29,6 @@ export interface FlightOffer {
   direct: boolean;
   stops: number;
   source_url?: string | null;
-  is_mock: boolean;
 }
 
 export interface ProgramStatus {
@@ -40,7 +39,15 @@ export interface ProgramStatus {
   succeeded: boolean;
   duration_ms: number;
   error?: string | null;
-  used_mock: boolean;
+  offers_found: number;
+}
+
+export interface ProviderLink {
+  program: string;
+  program_name: string;
+  alliance?: string | null;
+  implementation: "live" | "launcher";
+  url: string;
 }
 
 export interface SearchResponse {
@@ -52,13 +59,14 @@ export interface SearchResponse {
   cached: boolean;
   offers: FlightOffer[];
   program_statuses: ProgramStatus[];
+  provider_links: ProviderLink[];
 }
 
 export interface ProgramInfo {
   program: string;
   program_name: string;
   alliance?: string | null;
-  implementation: "live" | "stub" | "mock";
+  implementation: "live" | "launcher";
   notes?: string | null;
 }
 

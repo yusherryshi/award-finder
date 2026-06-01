@@ -1,11 +1,8 @@
 from __future__ import annotations
 
-from datetime import date
 from typing import List
 
-import httpx
-
-from ..schemas import Cabin, FlightOffer
+from ..schemas import FlightOffer
 from .base import Provider
 
 
@@ -13,17 +10,17 @@ class DeltaProvider(Provider):
     program = "delta"
     program_name = "Delta SkyMiles"
     alliance = "SkyTeam"
-    implementation = "stub"
-    notes = "TODO: delta.com shop endpoint. Heavily anti-botted. Mock for now."
-    base_rates = {"economy": 50000, "premium_economy": 80000, "business": 100000, "first": 180000}
+    implementation = "launcher"
+    notes = "Launches delta.com award search with route pre-filled."
 
-    async def search(
-        self,
-        client: httpx.AsyncClient,
-        origin: str,
-        destination: str,
-        depart_date: date,
-        cabin: Cabin,
-        passengers: int,
-    ) -> List[FlightOffer]:
-        return self.make_mock(origin, destination, depart_date, cabin)
+    async def search(self, client, origin, destination, depart_date, cabin, passengers) -> List[FlightOffer]:
+        return []
+
+    def deep_link(self, origin, destination, depart_date, cabin, passengers):
+        cabin_q = {"economy": "BE", "premium_economy": "PE", "business": "BU", "first": "FC"}.get(cabin, "BE")
+        return (
+            "https://www.delta.com/flight-search/book-a-flight?"
+            f"tripType=ONE_WAY&priceSchedule=PRICE&awardTravel=true"
+            f"&originCity={origin}&destinationCity={destination}"
+            f"&departureDate={depart_date.isoformat()}&paxCount={passengers}&cabinFareClass={cabin_q}"
+        )

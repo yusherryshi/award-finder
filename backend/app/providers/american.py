@@ -1,11 +1,8 @@
 from __future__ import annotations
 
-from datetime import date
 from typing import List
 
-import httpx
-
-from ..schemas import Cabin, FlightOffer
+from ..schemas import FlightOffer
 from .base import Provider
 
 
@@ -13,17 +10,17 @@ class AmericanProvider(Provider):
     program = "aa"
     program_name = "American AAdvantage"
     alliance = "Oneworld"
-    implementation = "stub"
-    notes = "TODO: aa.com/booking/api/search/itinerary. Mock data for now."
-    base_rates = {"economy": 30000, "premium_economy": 50000, "business": 57500, "first": 85000}
+    implementation = "launcher"
+    notes = "Launches aa.com award search with route pre-filled."
 
-    async def search(
-        self,
-        client: httpx.AsyncClient,
-        origin: str,
-        destination: str,
-        depart_date: date,
-        cabin: Cabin,
-        passengers: int,
-    ) -> List[FlightOffer]:
-        return self.make_mock(origin, destination, depart_date, cabin)
+    async def search(self, client, origin, destination, depart_date, cabin, passengers) -> List[FlightOffer]:
+        return []
+
+    def deep_link(self, origin, destination, depart_date, cabin, passengers):
+        cabin_q = {"economy": "COACH", "premium_economy": "PREMIUM_ECONOMY", "business": "BUSINESS", "first": "FIRST"}.get(cabin, "COACH")
+        return (
+            "https://www.aa.com/booking/find-flights?"
+            f"tripType=oneWay&adult={passengers}&cabin={cabin_q}&awardBooking=true"
+            f"&segments[0].origin={origin}&segments[0].destination={destination}"
+            f"&segments[0].travelDate={depart_date.isoformat()}"
+        )

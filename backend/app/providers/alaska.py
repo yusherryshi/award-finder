@@ -27,13 +27,6 @@ class AlaskaProvider(Provider):
         "Finnair, Iberia, Icelandair."
     )
 
-    base_rates = {
-        "economy": 30000,
-        "premium_economy": 45000,
-        "business": 70000,
-        "first": 110000,
-    }
-
     URL = "https://www.alaskaair.com/search/api/flights"
 
     async def search(
@@ -70,7 +63,15 @@ class AlaskaProvider(Provider):
         resp = await client.post(self.URL, json=payload, headers=headers, timeout=20)
         resp.raise_for_status()
         data = resp.json()
-        return self._parse(data, origin, destination, depart_date, cabin)
+        return self._parse(data, origin, destination, depart_date, cabin, passengers)
+
+    def deep_link(self, origin, destination, depart_date, cabin, passengers):
+        cabin_q = {"economy": "coach", "premium_economy": "premium", "business": "business", "first": "first"}.get(cabin, "coach")
+        return (
+            "https://www.alaskaair.com/search/results?"
+            f"A={passengers}&O={origin}&D={destination}&OD={depart_date.isoformat()}"
+            f"&RT=false&ShoppingMethod=onlineaward&CC={cabin_q}"
+        )
 
     def _parse(
         self,
@@ -79,6 +80,7 @@ class AlaskaProvider(Provider):
         destination: str,
         depart_date: date,
         cabin: Cabin,
+        passengers: int,
     ) -> List[FlightOffer]:
         offers: List[FlightOffer] = []
         for itin in (data.get("Slices") or [{}])[0].get("Itineraries", []) or []:
@@ -106,7 +108,7 @@ class AlaskaProvider(Provider):
                     seats_available=fare.get("SeatsRemaining"),
                     direct=len(segments) == 1,
                     stops=max(0, len(segments) - 1),
-                    source_url="https://www.alaskaair.com/",
+                    source_url=self.deep_link(origin, destination, depart_date, cabin, passengers),
                 )
             )
         return offers

@@ -42,7 +42,6 @@ class FlightOffer(BaseModel):
     direct: bool = True
     stops: int = 0
     source_url: Optional[str] = None
-    is_mock: bool = False
 
 
 class ProgramStatus(BaseModel):
@@ -53,7 +52,15 @@ class ProgramStatus(BaseModel):
     succeeded: bool
     duration_ms: int
     error: Optional[str] = None
-    used_mock: bool = False
+    offers_found: int = 0
+
+
+class ProviderLink(BaseModel):
+    program: str
+    program_name: str
+    alliance: Optional[str] = None
+    implementation: Literal["live", "launcher"]
+    url: str
 
 
 class SearchResponse(BaseModel):
@@ -65,11 +72,12 @@ class SearchResponse(BaseModel):
     cached: bool
     offers: List[FlightOffer]
     program_statuses: List[ProgramStatus]
+    provider_links: List[ProviderLink]
 
 
 class ProgramInfo(BaseModel):
     program: str
     program_name: str
     alliance: Optional[str] = None
-    implementation: Literal["live", "stub", "mock"]
+    implementation: Literal["live", "launcher"]
     notes: Optional[str] = None

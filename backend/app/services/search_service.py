@@ -13,6 +13,7 @@ from ..providers.registry import get_providers
 from ..schemas import (
     FlightOffer,
     ProgramStatus,
+    ProviderLink,
     SearchRequest,
     SearchResponse,
 )
@@ -25,9 +26,7 @@ async def _run_provider(
     client: httpx.AsyncClient,
     req: SearchRequest,
 ) -> Tuple[List[FlightOffer], ProgramStatus]:
-    settings = get_settings()
     start = time.perf_counter()
-    used_mock = False
     error: str | None = None
     offers: List[FlightOffer] = []
     succeeded = False
@@ -41,12 +40,9 @@ async def _run_provider(
             passengers=req.passengers,
         )
         succeeded = True
-    except Exception as e:  # broad: providers can fail in many ways
+    except Exception as e:
         error = f"{type(e).__name__}: {e}"
         logger.warning("Provider %s failed: %s", provider.program, error)
-        if settings.use_mock_fallback:
-            offers = provider.make_mock(req.origin, req.destination, req.depart_date, req.cabin)
-            used_mock = True
     duration_ms = int((time.perf_counter() - start) * 1000)
     status = ProgramStatus(
         program=provider.program,
@@ -56,7 +52,7 @@ async def _run_provider(
         succeeded=succeeded,
         duration_ms=duration_ms,
         error=error,
-        used_mock=used_mock,
+        offers_found=len(offers),
     )
     return offers, status
 
@@ -69,16 +65,37 @@ async def run_search(req: SearchRequest) -> SearchResponse:
 
     all_offers: List[FlightOffer] = []
     statuses: List[ProgramStatus] = []
+    links: List[ProviderLink] = []
+
+    live_providers = [p for p in providers if p.implementation == "live"]
 
     async with httpx.AsyncClient(timeout=timeout, limits=limits, http2=False) as client:
         results = await asyncio.gather(
-            *[_run_provider(p, client, req) for p in providers],
+            *[_run_provider(p, client, req) for p in live_providers],
             return_exceptions=False,
         )
 
     for offers, status in results:
         all_offers.extend(offers)
         statuses.append(status)
+
+    for p in providers:
+        try:
+            url = p.deep_link(
+                req.origin, req.destination, req.depart_date, req.cabin, req.passengers
+            )
+        except Exception as e:
+            logger.warning("deep_link failed for %s: %s", p.program, e)
+            continue
+        links.append(
+            ProviderLink(
+                program=p.program,
+                program_name=p.program_name,
+                alliance=p.alliance,
+                implementation=p.implementation,
+                url=url,
+            )
+        )
 
     all_offers.sort(key=lambda o: (o.miles, o.cabin))
 
@@ -91,4 +108,5 @@ async def run_search(req: SearchRequest) -> SearchResponse:
         cached=False,
         offers=all_offers,
         program_statuses=statuses,
+        provider_links=links,
     )

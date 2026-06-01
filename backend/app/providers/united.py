@@ -13,20 +13,16 @@ class UnitedProvider(Provider):
     program = "united"
     program_name = "United MileagePlus"
     alliance = "Star Alliance"
-    implementation = "stub"
-    notes = (
-        "TODO: united.com/api/flight/FetchFlights with proper Akamai bot bypass. "
-        "Currently returns mock data."
-    )
-    base_rates = {"economy": 33000, "premium_economy": 50000, "business": 70000, "first": 110000}
+    implementation = "launcher"
+    notes = "Launches united.com award search with route pre-filled."
 
-    async def search(
-        self,
-        client: httpx.AsyncClient,
-        origin: str,
-        destination: str,
-        depart_date: date,
-        cabin: Cabin,
-        passengers: int,
-    ) -> List[FlightOffer]:
-        return self.make_mock(origin, destination, depart_date, cabin)
+    async def search(self, client, origin, destination, depart_date, cabin, passengers) -> List[FlightOffer]:
+        return []
+
+    def deep_link(self, origin, destination, depart_date, cabin, passengers):
+        cabin_q = {"economy": "1", "premium_economy": "2", "business": "3", "first": "4"}.get(cabin, "1")
+        return (
+            "https://www.united.com/en/us/fsr/choose-flights?"
+            f"f={origin}&t={destination}&d={depart_date.isoformat()}&tt=1&px={passengers}"
+            f"&taxng=1&newHP=True&clm={cabin_q}&st=bestmatches&at=1"
+        )

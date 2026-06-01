@@ -1,11 +1,8 @@
 from __future__ import annotations
 
-from datetime import date
 from typing import List
 
-import httpx
-
-from ..schemas import Cabin, FlightOffer
+from ..schemas import FlightOffer
 from .base import Provider
 
 
@@ -13,17 +10,16 @@ class ANAProvider(Provider):
     program = "ana"
     program_name = "ANA Mileage Club"
     alliance = "Star Alliance"
-    implementation = "stub"
-    notes = "TODO: ana.co.jp award booking endpoint (login wall). Mock for now."
-    base_rates = {"economy": 55000, "premium_economy": 75000, "business": 88000, "first": 165000}
+    implementation = "launcher"
+    notes = "Launches ANA partner award search (login required)."
 
-    async def search(
-        self,
-        client: httpx.AsyncClient,
-        origin: str,
-        destination: str,
-        depart_date: date,
-        cabin: Cabin,
-        passengers: int,
-    ) -> List[FlightOffer]:
-        return self.make_mock(origin, destination, depart_date, cabin)
+    async def search(self, client, origin, destination, depart_date, cabin, passengers) -> List[FlightOffer]:
+        return []
+
+    def deep_link(self, origin, destination, depart_date, cabin, passengers):
+        return (
+            "https://aswbe-i.ana.co.jp/international_asr/award_search_input?"
+            f"WAYTYPE=2&DEPARTURE_DATE_FW={depart_date.strftime('%Y%m%d')}"
+            f"&DEPARTURE_AIRPORT_FW={origin}&ARRIVAL_AIRPORT_FW={destination}"
+            f"&NUM_ADT={passengers}&LANG=en"
+        )

@@ -24,15 +24,8 @@ class BritishAirwaysProvider(Provider):
     implementation = "live"
     notes = (
         "Calls BA reward-flight search. BA frequently rotates anti-bot tokens; "
-        "falls back to mock data on failure."
+        "when blocked the launcher link still works."
     )
-
-    base_rates = {
-        "economy": 26000,
-        "premium_economy": 52000,
-        "business": 75000,
-        "first": 110000,
-    }
 
     URL = "https://www.britishairways.com/travel/rewardflightsearch/public/en_gb"
 
@@ -63,7 +56,15 @@ class BritishAirwaysProvider(Provider):
         resp = await client.get(self.URL, params=params, headers=headers, timeout=20)
         resp.raise_for_status()
         data = resp.json()
-        return self._parse(data, origin, destination, depart_date, cabin)
+        return self._parse(data, origin, destination, depart_date, cabin, passengers)
+
+    def deep_link(self, origin, destination, depart_date, cabin, passengers):
+        cabin_q = CABIN_MAP.get(cabin, "M")
+        return (
+            "https://www.britishairways.com/travel/redeem/execclub/_gf/en_gb?"
+            f"eId=199001&from={origin}&to={destination}&departing={depart_date.isoformat()}"
+            f"&adults={passengers}&cabin={cabin_q}"
+        )
 
     def _parse(
         self,
@@ -72,6 +73,7 @@ class BritishAirwaysProvider(Provider):
         destination: str,
         depart_date: date,
         cabin: Cabin,
+        passengers: int,
     ) -> List[FlightOffer]:
         offers: List[FlightOffer] = []
         for itin in data.get("itineraries", []) or []:
@@ -100,7 +102,7 @@ class BritishAirwaysProvider(Provider):
                     seats_available=itin.get("seatsRemaining"),
                     direct=len(segments) == 1,
                     stops=max(0, len(segments) - 1),
-                    source_url="https://www.britishairways.com/travel/redeem/public/en_gb",
+                    source_url=self.deep_link(origin, destination, depart_date, cabin, passengers),
                 )
             )
         return offers

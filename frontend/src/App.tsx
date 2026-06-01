@@ -35,8 +35,9 @@ export default function App() {
         )}
         <ResultsTable data={data} />
         <footer className="pt-8 text-center text-xs text-muted">
-          Award Finder is a free, open project. Live integrations vary by program;
-          stubs return mock data marked clearly. Not affiliated with any airline.
+          Award Finder is a free, open project. Live offers come from public airline
+          endpoints; for programs without working live access, use the airline links to
+          search on their own site. Not affiliated with any airline.
         </footer>
       </main>
     </div>

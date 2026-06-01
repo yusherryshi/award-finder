@@ -1,11 +1,8 @@
 from __future__ import annotations
 
-from datetime import date
 from typing import List
 
-import httpx
-
-from ..schemas import Cabin, FlightOffer
+from ..schemas import FlightOffer
 from .base import Provider
 
 
@@ -13,17 +10,16 @@ class LufthansaProvider(Provider):
     program = "miles_and_more"
     program_name = "Lufthansa Miles & More"
     alliance = "Star Alliance"
-    implementation = "stub"
-    notes = "TODO: miles-and-more.com award search. Mock for now."
-    base_rates = {"economy": 35000, "premium_economy": 60000, "business": 85000, "first": 130000}
+    implementation = "launcher"
+    notes = "Launches Miles & More award search with route pre-filled."
 
-    async def search(
-        self,
-        client: httpx.AsyncClient,
-        origin: str,
-        destination: str,
-        depart_date: date,
-        cabin: Cabin,
-        passengers: int,
-    ) -> List[FlightOffer]:
-        return self.make_mock(origin, destination, depart_date, cabin)
+    async def search(self, client, origin, destination, depart_date, cabin, passengers) -> List[FlightOffer]:
+        return []
+
+    def deep_link(self, origin, destination, depart_date, cabin, passengers):
+        cabin_q = {"economy": "E", "premium_economy": "N", "business": "C", "first": "F"}.get(cabin, "E")
+        return (
+            "https://www.miles-and-more.com/online/portal/mam/award?"
+            f"l=en&from0={origin}&to0={destination}&date0={depart_date.isoformat()}"
+            f"&adult={passengers}&cabinClass={cabin_q}&tripType=ONE_WAY"
+        )

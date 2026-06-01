@@ -137,11 +137,9 @@ export default function SearchForm({ onSubmit, loading }: Props) {
                   title={p.notes || ""}
                 >
                   {p.program_name}
-                  {p.implementation !== "live" && (
-                    <span className="ml-1 text-[10px] uppercase opacity-60">
-                      {p.implementation}
-                    </span>
-                  )}
+                  <span className="ml-1 text-[10px] uppercase opacity-60">
+                    {p.implementation === "live" ? "live" : "link"}
+                  </span>
                 </button>
               );
             })}

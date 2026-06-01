@@ -1,11 +1,8 @@
 from __future__ import annotations
 
-from datetime import date
 from typing import List
 
-import httpx
-
-from ..schemas import Cabin, FlightOffer
+from ..schemas import FlightOffer
 from .base import Provider
 
 
@@ -13,17 +10,17 @@ class VirginAtlanticProvider(Provider):
     program = "virgin"
     program_name = "Virgin Atlantic Flying Club"
     alliance = "SkyTeam"
-    implementation = "stub"
-    notes = "TODO: virginatlantic.com flight-search-r3. Good for Delta partner sweet spots. Mock for now."
-    base_rates = {"economy": 20000, "premium_economy": 35000, "business": 47500, "first": 100000}
+    implementation = "launcher"
+    notes = "Launches Virgin Atlantic reward flight search with route pre-filled."
 
-    async def search(
-        self,
-        client: httpx.AsyncClient,
-        origin: str,
-        destination: str,
-        depart_date: date,
-        cabin: Cabin,
-        passengers: int,
-    ) -> List[FlightOffer]:
-        return self.make_mock(origin, destination, depart_date, cabin)
+    async def search(self, client, origin, destination, depart_date, cabin, passengers) -> List[FlightOffer]:
+        return []
+
+    def deep_link(self, origin, destination, depart_date, cabin, passengers):
+        cabin_q = {"economy": "economy", "premium_economy": "premium", "business": "upperclass", "first": "upperclass"}.get(cabin, "economy")
+        return (
+            "https://www.virginatlantic.com/flights-search/select?"
+            f"action=rewardSearch&isOneWay=true"
+            f"&origin={origin}&destination={destination}&departureDate={depart_date.isoformat()}"
+            f"&numberAdults={passengers}&cabinClass={cabin_q}"
+        )

@@ -23,16 +23,9 @@ class AeroplanProvider(Provider):
     alliance = "Star Alliance"
     implementation = "live"
     notes = (
-        "Calls Aeroplan public search endpoint. Endpoint, key, and payload format "
-        "change occasionally; falls back to mock data on failure."
+        "Calls Aeroplan public search endpoint. Endpoint and payload format change "
+        "frequently; when blocked the launcher link still works."
     )
-
-    base_rates = {
-        "economy": 35000,
-        "premium_economy": 50000,
-        "business": 70000,
-        "first": 100000,
-    }
 
     URL = (
         "https://akamai-gw.dbaas.aircanada.com/loyalty/dapidynamic/"
@@ -73,7 +66,16 @@ class AeroplanProvider(Provider):
         resp = await client.post(self.URL, json=payload, headers=headers, timeout=20)
         resp.raise_for_status()
         data = resp.json()
-        return self._parse(data, origin, destination, depart_date, cabin)
+        return self._parse(data, origin, destination, depart_date, cabin, passengers)
+
+    def deep_link(self, origin, destination, depart_date, cabin, passengers):
+        cabin_q = {"economy": "eco", "premium_economy": "ecoPremium", "business": "business", "first": "first"}.get(cabin, "eco")
+        return (
+            "https://www.aircanada.com/aeroplan/redeem/availability/outbound?"
+            f"org0={origin}&dest0={destination}&departureDate0={depart_date.isoformat()}"
+            f"&lang=en-CA&tripType=O&ADT={passengers}&YTH=0&CHD=0&INF=0&INS=0"
+            f"&marketCode=INT&cabinClass={cabin_q}"
+        )
 
     def _parse(
         self,
@@ -82,6 +84,7 @@ class AeroplanProvider(Provider):
         destination: str,
         depart_date: date,
         cabin: Cabin,
+        passengers: int,
     ) -> List[FlightOffer]:
         offers: List[FlightOffer] = []
         for bound in data.get("data", {}).get("airBoundGroups", []) or []:
@@ -116,7 +119,7 @@ class AeroplanProvider(Provider):
                         seats_available=item.get("quota"),
                         direct=len(segments) == 1,
                         stops=max(0, len(segments) - 1),
-                        source_url="https://www.aircanada.com/aeroplan/redeem/",
+                        source_url=self.deep_link(origin, destination, depart_date, cabin, passengers),
                     )
                 )
         return offers
