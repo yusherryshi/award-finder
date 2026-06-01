@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: award-finder-sherry-api
+    runtime: docker
+    rootDir: backend
+    dockerfilePath: ./Dockerfile
+    plan: free
+    region: oregon
+    envVars:
+      - key: CACHE_TTL_MINUTES
+        value: "60"
+      - key: USE_MOCK_FALLBACK
+        value: "true"
+      - key: CORS_ORIGINS
+        value: "*"
+      - key: HTTP_TIMEOUT_SECONDS
+        value: "15"
+      - key: DATABASE_URL
+        value: "sqlite:///./award_finder.db"
+    healthCheckPath: /healthz
